@@ -1,23 +1,18 @@
-//click start and it starts the timer
-var count = 100;
-var interval = setInterval();
-var Questions = document.getElementsByTagName("li");
+const navBar = document.querySelector('nav');
+const highscoresLink = document.getElementById('highscores-link');
+const container = document.getElementById('container');
+const timerDisplay = document.getElementById('timer');
+const startButton = document.getElementById('start-button');
+const title = document.getElementById('title');
+const text = document.getElementById('text');
+const quizAnswers = document.getElementById('quiz-answers');
+const answerButtons = document.getElementsByClassName('answer-button');
+const answerMessage = document.getElementById('answer-message');
+const inputField = document.getElementById('input-field');
+const initials = document.getElementById('initials');
+const submitButton = document.getElementById('submit-button');
 
-setInterval(function(){
-  document.getElementById('start').innerHTML=count;
-  count--;
-  if (count === 0){
-    clearInterval(interval);
-    document.getElementById('start').innerHTML='Done';
-  }
-}, 1000);
-
-document.getElementById('start').addEventListener("click", function(){
-  document.getElementById("begin").setAttribute("class", "hide");
-  document.getElementById("quiz").removeAttribute("class","hide");
-})
-
-const myQuestions = [
+const questions = [
     {
       question: "What's the name of the little sister in Totoro?",
       answers: ["Mei","Setsuko","Satsuki"],
@@ -36,62 +31,211 @@ const myQuestions = [
       correctAnswer: "Calcifer"
     },
   ];
-for (let index = 0; index < myQuestions[0].answers.length; index++) {
-    const element = myQuestions[index].answers;
-console.log(myQuestions);
 
-//when click on the answer, jumps to the next question
-// var clickAnswer = document.getElementsByClassName('options');
-    
-//     function navigate(direction) {
-//         index = index + direction;
-//         if (index < 0) { 
-//           index = images.length - 1; 
-//         } else if (index > Questions.length - 1) { 
-//           index = 0;
-//         }
-//         currentQuestion = Questions[index];
+let timerSecs = 0;
+let currentQuestion = 0
+let score = 0;
+let scoreArray = [];
+let timerInterval = false;
 
-// clickAnswer.addEventListener ("click", navigate);
+function startQuiz() {
+    timerSecs = 60;
+    timerDisplay.textContent = timerSecs;
 
-if (index === 2) {
-  function endGame() {
-    document.getElementById("quiz").setAttribute("class", "hide");
-    document.getElementById("endGame").removeAttribute("class","hide");
+    countdown();
+
+    nextQuestion();
+
+    startButton.style.display = 'none';
+}
+
+function nextQuestion() {
+
+    container.className = 'results-page mt-5'
+    title.textContent = 'Question ' + (currentQuestion + 1);
+    title.setAttribute('class', 'h2')
+    text.textContent = questions[currentQuestion].question;
+    text.className = 'h4';
+    text.setAttribute('style', 'border-top: 1px double #ba251a; padding-top: 20px;')
+
+    quizAnswers.style.display = 'block';
+
+    answerButtons[0].textContent = questions[currentQuestion].answers[0];
+    answerButtons[1].textContent = questions[currentQuestion].answers[1];
+    answerButtons[2].textContent = questions[currentQuestion].answers[2];
+    answerButtons[3].textContent = questions[currentQuestion].answers[3];
+
+    for (i = 0; i < answerButtons.length; i++) {
+        answerButtons[i].addEventListener('click', checkAnswer);
+    }
+}
+
+function checkAnswer(event) {
+    console.log('User chose: ' + event.target.textContent);
+    console.log('Correct answer: ' + questions[currentQuestion].correctAnswer);
+
+    if (event.target.textContent === questions[currentQuestion].correctAnswer) {
+        answerMessage.style.display = 'block';
+        answerMessage.textContent = 'Correct!';
+        answerMessage.className = 'answer-message';
+        currentQuestion ++;
+        score ++;
+
+        setTimeout(function() {
+            answerMessage.style.display = 'none';
+        }, 800);
+
+        if (currentQuestion === questions.length) {
+            endGame();
+
+        } else {
+            nextQuestion();
+        };
+
+    } else {
+        currentQuestion ++;
+        answerMessage.style.display = 'block';
+        answerMessage.textContent = 'Incorrect!';
+        answerMessage.className = 'answer-message';
+
+        setTimeout(function() {
+            answerMessage.style.display = 'none';
+        }, 800);
+
+        if (timerSecs < 10) {
+            timerSecs -= 10;
+            endGame();
+
+        } else if (currentQuestion === 5) {
+            endGame();
+
+        } else {
+            timerSecs -= 10;
+            nextQuestion();
+        };
+    }
 };
-//when the answer is correct, write correcrt, otherwise wrong
-var correctAnswer=document.getElementsByClassName("correct");
-if (clickAnswer.val() === correctAnswer){
-    document.getElementById('correctOrNot').textContent("Correct!");
 
-} else {
-    document.getElementById('correctOrNot').textContent("False!");
-    count -= 10
+function endGame() {
+    quizAnswers.style.display = 'none';
+    container.className = 'quiz-page mt-5'
+    title.setAttribute('class', 'h2');
+    text.setAttribute('style', 'border-top: 0');
+    text.removeAttribute('class');
+    text.textContent = 'Your final score is ' + score + '. Enter your initials to see the high scores!';
+    inputField.style.display = 'block';
+
+    if (timerSecs <= 0) {
+        title.textContent = 'You ran out of time!';
+    } else {
+        title.textContent = 'All done!';
+    }
+
+    submitButton.addEventListener('click', storeHighScore);
 }
 
-var questionIndex = 1;
 
-myQuestions[questionIndex].question
-for (let i = 0; i < myQuestions[questionIndex].answers.length; i++) {
-    document.getElementsByClassName("options");
-    document.createElement("button");
-    document.getElementsByName("button").addEventListener("click", questionIndex++);
+function storeHighScore(event) {
+    event.preventDefault();
+
+    if (initials.value.length === 0) {
+        return
+    
+    } else {
+        newScore = {
+            userName: initials.value.trim(),
+            userScore: score
+        };
+        scoreArray.push(newScore);
+
+        scoreArray.sort((a, b) => b.userScore - a.userScore);
+        
+        localStorage.setItem('score', JSON.stringify(scoreArray));
+    
+        seeHighScores();
+    }
 }
 
+function loadHighScore() {
+    storedScores = JSON.parse(localStorage.getItem('score'));
 
-//final score shows at the final page 
+    if (storedScores !== null) {
+        scoreArray = storedScores;
 
+        return scoreArray;
+    }
+}
 
-//input of name 
+function seeHighScores() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    };
 
+    container.className = 'score-page mt-5 card bg-light p-4';
+    let ul = document.createElement('ul');
+    let returnButton = document.createElement('button');
+    let clearButton = document.createElement('button');
+    returnButton.textContent = 'Go Back';
+    clearButton.textContent = 'Clear High Scores';
+    container.appendChild(ul);
+    container.appendChild(returnButton);
+    container.appendChild(clearButton);
 
-//record the name to local storage
+    startButton.style.display = 'none';
+    navBar.style.visibility = 'hidden';
+    title.textContent = 'High Scores';
+    text.textContent = '';
+    text.setAttribute('style', 'border-top: 0');
+    quizAnswers.style.display = 'none';
+    inputField.style.display = 'none';
 
+    for (i = 0; i < scoreArray.length; i++) {
+        let score = scoreArray[i].userName + ' : ' + scoreArray[i].userScore;
 
-//compare the scores and have it rank
+        li = document.createElement('li');
+        li.textContent = score;
+        ul.appendChild(li);
+    }
 
-//go back button and clear highscores
+    returnButton.addEventListener('click', function() {
+        location.href = 'index.html'
+    });
 
-//click start and it jumps to the first question
+    clearButton.addEventListener('click', function() {
+        localStorage.clear();
+        ul.innerHTML = '';
+    });
+};
 
+function countdown() {
+    timerInterval = setInterval(function() {
+        timerSecs --;
+        timerDisplay.textContent = timerSecs;
 
+        if (timerSecs < 1) {
+            timerDisplay.textContent = 0;
+            endGame();
+            clearInterval(timerInterval);
+        };
+
+        if (currentQuestion === 5) {
+            timerDisplay.textContent = timerSecs;
+            clearInterval(timerInterval);
+        }
+    }, 1000)
+}
+
+function handleFirstTab(e) {
+    if (e.keyCode === 9) { 
+        document.body.classList.add('user-is-tabbing');
+        window.removeEventListener('keydown', handleFirstTab);
+    }
+}
+
+window.addEventListener('keydown', handleFirstTab);
+
+loadHighScore();
+
+startButton.addEventListener('click', startQuiz);
+
+highscoresLink.addEventListener('click', seeHighScores);
